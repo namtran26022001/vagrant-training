@@ -1,6 +1,6 @@
 FROM php:8.3.9-apache
 
-# Declare composer version
+# Khai báo phiên bản Composer
 ENV COMPOSER_VERSION=2.7.7
 
 RUN apt-get update \
@@ -25,7 +25,10 @@ RUN apt-get update \
         exif \
         pdo_mysql \
         mysqli \
-        && docker-php-ext-enable pdo_mysql mysqli
+    && docker-php-ext-enable pdo_mysql
+
+RUN pecl install redis \
+    && docker-php-ext-enable redis
 
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
@@ -34,7 +37,7 @@ ENV APACHE_DOCUMENT_ROOT /var/www/html
 
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
-# Install Composer with specified version
+# Cài đặt Composer với phiên bản đã chỉ định
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --version=$COMPOSER_VERSION
 
 RUN a2enmod rewrite
@@ -43,4 +46,4 @@ RUN useradd -ms /bin/bash -u 1000 app
 
 #COPY start /usr/local/bin/
 
-#CMD [ "start" ]
+#CMD ["start"]
