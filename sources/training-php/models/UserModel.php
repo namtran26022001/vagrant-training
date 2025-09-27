@@ -5,11 +5,12 @@ require_once 'BaseModel.php';
 class UserModel extends BaseModel {
 
     public function findUserById($id) {
-        $sql = 'SELECT * FROM users WHERE id = '.$id;
-        $user = $this->select($sql);
-
-        return $user;
-    }
+    $stmt = self::$_connection->prepare("SELECT * FROM users WHERE id = ?");
+    $stmt->bind_param("i", $id); // i = integer
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
 
     public function findUser($keyword) {
         $sql = 'SELECT * FROM users WHERE user_name LIKE %'.$keyword.'%'. ' OR user_email LIKE %'.$keyword.'%';
@@ -25,12 +26,14 @@ class UserModel extends BaseModel {
      * @return array
      */
     public function auth($userName, $password) {
-        $md5Password = md5($password);
-        $sql = 'SELECT * FROM users WHERE name = "' . $userName . '" AND password = "'.$md5Password.'"';
+    $md5Password = md5($password);
+    $stmt = self::$_connection->prepare("SELECT * FROM users WHERE name = ? AND password = ?");
+    $stmt->bind_param("ss", $userName, $md5Password); // s = string
+    $stmt->execute();
+    $result = $stmt->get_result();
+    return $result->fetch_all(MYSQLI_ASSOC);
+}
 
-        $user = $this->select($sql);
-        return $user;
-    }
 
     /**
      * Delete user by id
@@ -79,22 +82,18 @@ class UserModel extends BaseModel {
      * @return array
      */
     public function getUsers($params = []) {
-        //Keyword
-        if (!empty($params['keyword'])) {
-            $sql = 'SELECT * FROM users WHERE name LIKE "%' . $params['keyword'] .'%"';
-
-            //Keep this line to use Sql Injection
-            //Don't change
-            //Example keyword: abcef%";TRUNCATE banks;##
-            $users = self::$_connection->multi_query($sql);
-
-            //Get data
-            $users = $this->query($sql);
-        } else {
-            $sql = 'SELECT * FROM users';
-            $users = $this->select($sql);
-        }
-
-        return $users;
+    if (!empty($params['keyword'])) {
+        $keyword = "%" . $params['keyword'] . "%";
+        $stmt = self::$_connection->prepare("SELECT * FROM users WHERE name LIKE ?");
+        $stmt->bind_param("s", $keyword);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_all(MYSQLI_ASSOC);
+    } else {
+        $sql = "SELECT * FROM users";
+        $result = $this->query($sql);
+        return $result->fetch_all(MYSQLI_ASSOC);
     }
+}
+
 }
